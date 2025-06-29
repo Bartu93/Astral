@@ -1,0 +1,4 @@
+repository "Astral Profit@Bratucan@cloud"
+  path "/"
+    br "/main"
+    co "/main"

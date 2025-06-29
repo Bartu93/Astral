@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: bb7c584e60e58ed4f990b730d1a71c4b
+timeCreated: 1517347637
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 120152
+  packageName: POLYGON Nature - Low Poly 3D Art by Synty
+  packageVersion: 1.16
+  assetPath: Assets/PolygonNature/FX/FX_Materials/Smoke_Material.mat
+  uploadId: 640068
