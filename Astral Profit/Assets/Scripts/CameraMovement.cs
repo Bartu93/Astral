@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class CameraMovement : MonoBehaviour
 {
@@ -26,8 +27,17 @@ public class CameraMovement : MonoBehaviour
     {
         if (!Input.GetKey(KeyCode.LeftShift)) // Toggle movement restriction with Shift key
         {
-            HandleMovementInput();
-            HandleMouseInput();
+            // Only run if mouse is NOT over UI
+            if (!EventSystem.current.IsPointerOverGameObject())
+            {
+                HandleMovementInput();
+                HandleMouseInput();
+            }
+            else
+            {
+                // Still allow scroll wheel zoom if you want:
+                HandleScrollZoomOnly();
+            }
         }
     }
 
@@ -86,5 +96,14 @@ public class CameraMovement : MonoBehaviour
 
         // Update transform position and rotation
         transform.position = Vector3.Lerp(transform.position, newPosition, Time.deltaTime * movementTime);
+    }
+    void HandleScrollZoomOnly()
+    {
+        if (Input.mouseScrollDelta.y != 0)
+        {
+            newZoom -= Input.mouseScrollDelta.y * zoomSpeed;
+            newZoom = Mathf.Clamp(newZoom, minZoomSize, maxZoomSize);
+            cameraTransform.GetComponent<Camera>().orthographicSize = newZoom;
+        }
     }
 }
