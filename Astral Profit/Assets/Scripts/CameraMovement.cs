@@ -16,6 +16,7 @@ public class CameraMovement : MonoBehaviour
     private Vector3 newPosition;
     private float newZoom;
     private Vector3 dragStartPosition;
+    private bool isDragging = false; // Track if dragging is active
 
     void Start()
     {
@@ -25,44 +26,37 @@ public class CameraMovement : MonoBehaviour
 
     void Update()
     {
-        if (!Input.GetKey(KeyCode.LeftShift)) // Toggle movement restriction with Shift key
+        if (!Input.GetKey(KeyCode.LeftShift))
         {
-            // Only run if mouse is NOT over UI
-            if (!EventSystem.current.IsPointerOverGameObject())
-            {
-                HandleMovementInput();
-                HandleMouseInput();
-            }
-            else
-            {
-                // Still allow scroll wheel zoom if you want:
-                HandleScrollZoomOnly();
-            }
+            HandleMovementInput();
+            HandleMouseInput();
         }
     }
 
     void HandleMouseInput()
     {
-        // Zooming with mouse scroll
-        if (Input.mouseScrollDelta.y != 0)
+        // Zooming with mouse scroll (only start if not over UI)
+        if (Input.mouseScrollDelta.y != 0 && !EventSystem.current.IsPointerOverGameObject())
         {
             newZoom -= Input.mouseScrollDelta.y * zoomSpeed;
             newZoom = Mathf.Clamp(newZoom, minZoomSize, maxZoomSize);
             cameraTransform.GetComponent<Camera>().orthographicSize = newZoom;
         }
 
-        // Dragging
-        if (Input.GetMouseButtonDown(0))
+        // Start Dragging (only if not over UI)
+        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
         {
             Plane plane = new Plane(Vector3.up, Vector3.zero);
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (plane.Raycast(ray, out float entry))
             {
                 dragStartPosition = ray.GetPoint(entry);
+                isDragging = true;
             }
         }
 
-        if (Input.GetMouseButton(0))
+        // Continue dragging (even over UI, if it already started)
+        if (Input.GetMouseButton(0) && isDragging)
         {
             Plane plane = new Plane(Vector3.up, Vector3.zero);
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -74,11 +68,17 @@ public class CameraMovement : MonoBehaviour
                 newPosition.z = Mathf.Clamp(newPosition.z, minSidewaysLimit, maxSidewaysLimit);
             }
         }
+
+        // Stop dragging when mouse released
+        if (Input.GetMouseButtonUp(0))
+        {
+            isDragging = false;
+        }
     }
 
     void HandleMovementInput()
     {
-        // Movement
+        // WASD/Arrow movement (works regardless of UI hover)
         if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow))
             newPosition += transform.forward * movementSpeed * Time.deltaTime;
         if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow))
@@ -94,16 +94,7 @@ public class CameraMovement : MonoBehaviour
         if (Input.GetKey(KeyCode.E))
             transform.Rotate(Vector3.up, -rotationAmount * Time.deltaTime);
 
-        // Update transform position and rotation
+        // Smooth movement
         transform.position = Vector3.Lerp(transform.position, newPosition, Time.deltaTime * movementTime);
-    }
-    void HandleScrollZoomOnly()
-    {
-        if (Input.mouseScrollDelta.y != 0)
-        {
-            newZoom -= Input.mouseScrollDelta.y * zoomSpeed;
-            newZoom = Mathf.Clamp(newZoom, minZoomSize, maxZoomSize);
-            cameraTransform.GetComponent<Camera>().orthographicSize = newZoom;
-        }
     }
 }

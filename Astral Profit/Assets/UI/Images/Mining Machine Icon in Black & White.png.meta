@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: dda20c615f9651b4e8c6079aa04ed1a6
+guid: 3b4858794b534044eb861493c017f18f
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -123,45 +123,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Radar with Mining Icon_0
+      name: Mining Machine Icon in Black & White_0
       rect:
         serializedVersion: 2
-        x: 135
-        y: 89
-        width: 744
-        height: 797
+        x: 101
+        y: 58
+        width: 816
+        height: 904
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 05ada25426d59034c8f26abeb0cf0d4b
-      internalID: 1842636933
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Radar with Mining Icon_1
-      rect:
-        serializedVersion: 2
-        x: 559
-        y: 168
-        width: 337
-        height: 215
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: cb67cd3c1e62b5d43a9604cb2939149f
-      internalID: 815203120
+      spriteID: d6a430c8c4f02ba4f8f99c694d403c58
+      internalID: -469944094
       vertices: []
       indices: 
       edges: []
@@ -170,7 +148,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: a2633e48cd82d2145818b78f0bb8737b
+    spriteID: 3ec1984c84ebf674996f70cf076829c2
     internalID: 0
     vertices: []
     indices: 
@@ -180,8 +158,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Radar with Mining Icon_0: 1842636933
-      Radar with Mining Icon_1: 815203120
+      Mining Machine Icon in Black & White_0: -469944094
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
