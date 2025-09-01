@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 33415077715107912}
   - component: {fileID: 23385455461247812}
   - component: {fileID: 64475642984296278}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: SM_Env_Plant_Balloon_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
