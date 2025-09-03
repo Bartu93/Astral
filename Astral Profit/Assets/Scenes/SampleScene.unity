@@ -3631,6 +3631,7 @@ GameObject:
   - component: {fileID: 1510843485}
   - component: {fileID: 1510843484}
   - component: {fileID: 1510843483}
+  - component: {fileID: 1510843486}
   m_Layer: 4
   m_Name: Lava_Ground
   m_TagString: Untagged
@@ -3706,6 +3707,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &1510843486
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1510843481}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.99999994, y: 0, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1541166896
 GameObject:
   m_ObjectHideFlags: 0
@@ -3963,8 +3985,12 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
+  obstacleLayer:
+    serializedVersion: 2
+    m_Bits: 144
   previewTransparency: 0.25
-  previewMaterial: {fileID: -5857886671465511977, guid: bb17df1af72ef194b841626d2ed6925d, type: 3}
+  previewMaterial: {fileID: 2100000, guid: 90bccaded91c1af45be10f0a09a52482, type: 2}
+  invalidPlacementMaterial: {fileID: 2100000, guid: cf66818ff80e3b14e837f233dbd158b7, type: 2}
   cancelKey: 27
   confirmKey: 13
 --- !u!1001 &1601027048

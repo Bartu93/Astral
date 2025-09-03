@@ -1,20 +1,25 @@
-using UnityEngine.EventSystems;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
+// ATTACH THIS TO AN EMPTY GAMEOBJECT IN YOUR SCENE
 public class BuildingPlacerManager : MonoBehaviour
 {
     [Header("Placement Settings")]
     public LayerMask groundLayer = 1;  // Layer mask for valid placement surfaces
+    public LayerMask obstacleLayer = 0;  // Layer mask for obstacles (prevents placement)
     public float previewTransparency = 0.25f;  // Transparency for preview
     public Material previewMaterial;  // Optional custom material for preview
+    public Material invalidPlacementMaterial;  // Red material for invalid placement
 
     [Header("Input Settings")]
     public KeyCode cancelKey = KeyCode.Escape;  // Key to cancel placement
     public KeyCode confirmKey = KeyCode.Return;  // Alternative key to confirm placement
 
+    // Private variables
     private GameObject currentPreview;  // Current preview instance
     private GameObject prefabToPlace;   // Prefab that will be placed
     private bool isInPlacementMode = false;
+    private bool isValidPlacement = false;  // Tracks if current position is valid
     private Camera playerCamera;
     private float placementStartTime;   // Time when placement started
     private float clickDelay = 0.1f;    // Delay to prevent immediate placement
@@ -78,8 +83,8 @@ public class BuildingPlacerManager : MonoBehaviour
             // Disable any scripts that shouldn't run on preview
             DisablePreviewScripts();
 
-            // Make preview transparent
-            MakePreviewTransparent();
+            // Make preview transparent (will be updated by UpdatePreviewMaterial)
+            UpdatePreviewMaterial(true);
 
             // Position preview off-screen initially
             currentPreview.transform.position = new Vector3(0, -1000, 0);
@@ -119,51 +124,6 @@ public class BuildingPlacerManager : MonoBehaviour
         }
     }
 
-    void MakePreviewTransparent()
-    {
-        if (currentPreview == null) return;
-
-        Renderer[] renderers = currentPreview.GetComponentsInChildren<Renderer>();
-
-        foreach (Renderer renderer in renderers)
-        {
-            Material[] materials = renderer.materials;
-
-            for (int i = 0; i < materials.Length; i++)
-            {
-                // Create a new material instance to avoid affecting the original
-                Material newMat = new Material(materials[i]);
-
-                // Set rendering mode to transparent
-                if (previewMaterial != null)
-                {
-                    newMat = new Material(previewMaterial);
-                }
-                else
-                {
-                    // Standard transparency setup
-                    newMat.SetFloat("_Mode", 3); // Transparent mode
-                    newMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                    newMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                    newMat.SetInt("_ZWrite", 0);
-                    newMat.DisableKeyword("_ALPHATEST_ON");
-                    newMat.EnableKeyword("_ALPHABLEND_ON");
-                    newMat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                    newMat.renderQueue = 3000;
-                }
-
-                // Set transparency
-                Color color = newMat.color;
-                color.a = previewTransparency;
-                newMat.color = color;
-
-                materials[i] = newMat;
-            }
-
-            renderer.materials = materials;
-        }
-    }
-
     void UpdatePreviewPosition()
     {
         if (currentPreview == null || playerCamera == null)
@@ -175,20 +135,151 @@ public class BuildingPlacerManager : MonoBehaviour
 
         Ray ray = playerCamera.ScreenPointToRay(Input.mousePosition);
 
-        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, groundLayer))
+        // Check both ground and obstacle layers for positioning
+        LayerMask combinedLayers = groundLayer | obstacleLayer;
+
+        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, combinedLayers))
         {
             // Position the preview at the hit point
             currentPreview.transform.position = hit.point;
-            // Debug.Log($"Preview positioned at: {hit.point}"); // Uncomment for detailed position logging
+
+            // Check if we hit the ground layer specifically
+            bool hitGround = ((1 << hit.collider.gameObject.layer) & groundLayer) != 0;
+
+            if (hitGround)
+            {
+                // We hit valid ground, now check for obstacles at this position
+                bool hasObstacle = CheckForObstacles(hit.point);
+                isValidPlacement = !hasObstacle;
+            }
+            else
+            {
+                // We hit an obstacle (like water) directly
+                isValidPlacement = false;
+            }
+
+            // Update material based on validity
+            UpdatePreviewMaterial(isValidPlacement);
 
             // Optionally align to surface normal
             // currentPreview.transform.up = hit.normal;
         }
+        else if (Physics.Raycast(ray, out RaycastHit groundHit, Mathf.Infinity, groundLayer))
+        {
+            // Fallback: if we didn't hit the combined layers, try just ground
+            currentPreview.transform.position = groundHit.point;
+
+            // Check for obstacles at this position
+            bool hasObstacle = CheckForObstacles(groundHit.point);
+            isValidPlacement = !hasObstacle;
+            UpdatePreviewMaterial(isValidPlacement);
+        }
         else
         {
-            // Hide preview if not over valid ground
+            // Hide preview if not over any valid surface
             currentPreview.transform.position = new Vector3(0, -1000, 0);
-            // Debug.Log("No valid ground hit - hiding preview"); // Uncomment for detailed logging
+            isValidPlacement = false;
+        }
+    }
+
+    bool CheckForObstacles(Vector3 position)
+    {
+        // Get the bounds of the preview object to check for overlaps
+        Bounds previewBounds = GetPreviewBounds();
+
+        // Check for obstacles using OverlapBox
+        Collider[] obstacles = Physics.OverlapBox(
+            position + previewBounds.center,
+            previewBounds.extents,
+            currentPreview.transform.rotation,
+            obstacleLayer
+        );
+
+        // Alternative: Use a sphere check if you prefer
+        // Collider[] obstacles = Physics.OverlapSphere(position, 1f, obstacleLayer);
+
+        return obstacles.Length > 0;
+    }
+
+    Bounds GetPreviewBounds()
+    {
+        if (currentPreview == null) return new Bounds();
+
+        // Get combined bounds of all renderers in the preview
+        Renderer[] renderers = currentPreview.GetComponentsInChildren<Renderer>();
+        if (renderers.Length == 0) return new Bounds(Vector3.zero, Vector3.one);
+
+        Bounds combinedBounds = renderers[0].bounds;
+        foreach (Renderer renderer in renderers)
+        {
+            combinedBounds.Encapsulate(renderer.bounds);
+        }
+
+        // Convert to local space relative to the preview object
+        combinedBounds.center -= currentPreview.transform.position;
+
+        return combinedBounds;
+    }
+
+    void UpdatePreviewMaterial(bool isValid)
+    {
+        if (currentPreview == null) return;
+
+        Renderer[] renderers = currentPreview.GetComponentsInChildren<Renderer>();
+
+        foreach (Renderer renderer in renderers)
+        {
+            Material[] materials = renderer.materials;
+
+            for (int i = 0; i < materials.Length; i++)
+            {
+                Material newMat;
+
+                if (!isValid && invalidPlacementMaterial != null)
+                {
+                    // Use red material for invalid placement
+                    newMat = new Material(invalidPlacementMaterial);
+                }
+                else if (previewMaterial != null)
+                {
+                    // Use custom preview material
+                    newMat = new Material(previewMaterial);
+                }
+                else
+                {
+                    // Use original material with transparency
+                    newMat = new Material(materials[i]);
+
+                    // Set rendering mode to transparent
+                    newMat.SetFloat("_Mode", 3); // Transparent mode
+                    newMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                    newMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                    newMat.SetInt("_ZWrite", 0);
+                    newMat.DisableKeyword("_ALPHATEST_ON");
+                    newMat.EnableKeyword("_ALPHABLEND_ON");
+                    newMat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                    newMat.renderQueue = 3000;
+                }
+
+                // Set transparency and color
+                Color color = newMat.color;
+                if (!isValid)
+                {
+                    // Red color for invalid placement
+                    color = Color.red;
+                    color.a = previewTransparency;
+                }
+                else
+                {
+                    // Normal transparent color for valid placement
+                    color.a = previewTransparency;
+                }
+                newMat.color = color;
+
+                materials[i] = newMat;
+            }
+
+            renderer.materials = materials;
         }
     }
 
@@ -227,8 +318,9 @@ public class BuildingPlacerManager : MonoBehaviour
     {
         if (currentPreview == null) return false;
 
-        // Check if preview is at a valid position (not hidden)
-        return currentPreview.transform.position.y > -100;
+        // Check if preview is at a valid position (not hidden) AND no obstacles
+        bool positionValid = currentPreview.transform.position.y > -100;
+        return positionValid && isValidPlacement;
     }
 
     void PlaceBuilding()
@@ -278,6 +370,7 @@ public class BuildingPlacerManager : MonoBehaviour
     public void CancelPlacement()
     {
         isInPlacementMode = false;
+        isValidPlacement = false;  // Reset validity flag
 
         if (currentPreview != null)
         {

@@ -1,8 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 
-// Script for individual building buttons
+// Script for individual building buttons - ATTACH THIS TO YOUR UI BUTTONS
 public class BuildingButton : MonoBehaviour
 {
     [Header("Building Settings")]
