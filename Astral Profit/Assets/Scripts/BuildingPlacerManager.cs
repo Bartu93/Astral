@@ -35,6 +35,8 @@ public class BuildingPlacerManager : MonoBehaviour
         {
             playerCamera = FindObjectOfType<Camera>();
         }
+
+        Application.targetFrameRate = 120;
     }
 
     void Update()
@@ -100,20 +102,15 @@ public class BuildingPlacerManager : MonoBehaviour
     {
         if (currentPreview == null) return;
 
-        // Disable common scripts that shouldn't run on preview
+        // Disable ALL MonoBehaviour scripts on the preview (except this manager)
         MonoBehaviour[] scripts = currentPreview.GetComponentsInChildren<MonoBehaviour>();
         foreach (MonoBehaviour script in scripts)
         {
             // Skip this manager script
             if (script is BuildingPlacerManager) continue;
 
-            // Disable scripts like UpdateGrid, ResourceExtractor, etc.
-            if (script.GetType().Name == "UpdateGrid" ||
-                script.GetType().Name == "ResourceExtractor" ||
-                script.GetType().Name == "BuildingLogic")
-            {
-                script.enabled = false;
-            }
+            // Disable all other scripts
+            script.enabled = false;
         }
 
         // Disable colliders to prevent interference
@@ -345,18 +342,14 @@ public class BuildingPlacerManager : MonoBehaviour
         Debug.Log($"Building placed at {placementPosition}");
     }
 
+    // Replace the EnableBuildingScripts method in your BuildingPlacerManager with this:
     void EnableBuildingScripts(GameObject building)
     {
-        // Enable scripts that were disabled in preview
+        // Enable ALL MonoBehaviour scripts on the placed building
         MonoBehaviour[] scripts = building.GetComponentsInChildren<MonoBehaviour>();
         foreach (MonoBehaviour script in scripts)
         {
-            if (script.GetType().Name == "UpdateGrid" ||
-                script.GetType().Name == "ResourceExtractor" ||
-                script.GetType().Name == "BuildingLogic")
-            {
-                script.enabled = true;
-            }
+            script.enabled = true;
         }
 
         // Enable colliders
