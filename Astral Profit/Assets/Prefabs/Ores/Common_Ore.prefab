@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6519000386704871692}
   - component: {fileID: 2240292445877544774}
   - component: {fileID: 5794321251735178853}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Common_Ore
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4817,7 +4817,7 @@ GameObject:
   - component: {fileID: 8199116501660089324}
   - component: {fileID: 7299866107864160052}
   - component: {fileID: 4769316853499164313}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: PortalDust
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9599,7 +9599,7 @@ GameObject:
   - component: {fileID: 2636662663882463628}
   - component: {fileID: 2138315818228138221}
   - component: {fileID: 6154782074865089832}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: GlowCircle
   m_TagString: Untagged
   m_Icon: {fileID: 0}

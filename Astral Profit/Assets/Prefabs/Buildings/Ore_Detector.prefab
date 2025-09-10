@@ -237,6 +237,9 @@ MonoBehaviour:
   animator: {fileID: 8963457008122961420}
   animationTrigger: StartDetection
   delayBeforeAnimation: 1
+  detectorLayer:
+    serializedVersion: 2
+    m_Bits: 512
   vfxPrefab: {fileID: 3011517695444648663}
   vfxSpawnPoint: {fileID: 1986847872945790604}
   vfxGrowthInterval: 10
@@ -270,7 +273,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   commonOrePrefab: {fileID: 2985995880435455286, guid: 32b3c35595457374ab3ba58fc56736b1, type: 3}
   strategicOrePrefab: {fileID: 8255915909027502832, guid: cbfc5bef31ef4fa4b8e89fd78afb7647, type: 3}
-  oreSpawnChancePerInterval: 40
+  oreSpawnChancePerInterval: 20
   commonOreSpawnChance: 40
   strategicOreSpawnChance: 20
   maxOresPerInterval: 1
@@ -378,6 +381,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1986847872945790604}
     m_Modifications:
+    - target: {fileID: 128876, guid: 087da436576d35542825d392925d79c4, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 163638, guid: 087da436576d35542825d392925d79c4, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 163638, guid: 087da436576d35542825d392925d79c4, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -385,6 +396,10 @@ PrefabInstance:
     - target: {fileID: 191608, guid: 087da436576d35542825d392925d79c4, type: 3}
       propertyPath: m_Name
       value: BasicZoneGreen
+      objectReference: {fileID: 0}
+    - target: {fileID: 191608, guid: 087da436576d35542825d392925d79c4, type: 3}
+      propertyPath: m_Layer
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 191608, guid: 087da436576d35542825d392925d79c4, type: 3}
       propertyPath: m_IsActive

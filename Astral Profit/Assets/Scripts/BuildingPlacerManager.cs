@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
 
 // ATTACH THIS TO AN EMPTY GAMEOBJECT IN YOUR SCENE
@@ -10,6 +10,9 @@ public class BuildingPlacerManager : MonoBehaviour
     public float previewTransparency = 0.25f;  // Transparency for preview
     public Material previewMaterial;  // Optional custom material for preview
     public Material invalidPlacementMaterial;  // Red material for invalid placement
+
+    [Header("Special Placement Rules")]
+    public LayerMask oreLayer;                  // Assign Ore layer here (must match your detector-spawned ores)
 
     [Header("Input Settings")]
     public KeyCode cancelKey = KeyCode.Escape;  // Key to cancel placement
@@ -23,6 +26,9 @@ public class BuildingPlacerManager : MonoBehaviour
     private Camera playerCamera;
     private float placementStartTime;   // Time when placement started
     private float clickDelay = 0.1f;    // Delay to prevent immediate placement
+
+    // Building type detection
+    private bool currentBuildingRequiresOre = false;  // Will be set based on building type
 
     // Events for other systems to hook into
     public System.Action<GameObject> OnBuildingPlaced;
@@ -67,10 +73,44 @@ public class BuildingPlacerManager : MonoBehaviour
         isInPlacementMode = true;
         placementStartTime = Time.time;  // Record when placement started
 
-        Debug.Log($"Placement mode enabled. isInPlacementMode: {isInPlacementMode}");
+        // Determine if this building type requires ore
+        DetermineBuildingRequirements(buildingPrefab);
+
+        Debug.Log($"Placement mode enabled. isInPlacementMode: {isInPlacementMode}, requiresOre: {currentBuildingRequiresOre}");
 
         // Create preview instance
         CreatePreview();
+    }
+
+    void DetermineBuildingRequirements(GameObject buildingPrefab)
+    {
+        // Check if this is an extractor by looking for specific components or name patterns
+        // Method 1: Check by name (adjust these names to match your prefabs)
+        string prefabName = buildingPrefab.name.ToLower();
+        if (prefabName.Contains("extractor") || prefabName.Contains("mine") || prefabName.Contains("drill"))
+        {
+            currentBuildingRequiresOre = true;
+            Debug.Log("Building requires ore: " + buildingPrefab.name);
+            return;
+        }
+
+        // Method 2: Check for specific components (if your extractors have unique scripts)
+        // Example: if (buildingPrefab.GetComponent<ExtractorScript>() != null)
+        // {
+        //     currentBuildingRequiresOre = true;
+        //     return;
+        // }
+
+        // Method 3: Check by tag (if you've tagged your extractors)
+        // if (buildingPrefab.CompareTag("Extractor"))
+        // {
+        //     currentBuildingRequiresOre = true;
+        //     return;
+        // }
+
+        // Default: building doesn't require ore (like ore detectors)
+        currentBuildingRequiresOre = false;
+        Debug.Log("Building does not require ore: " + buildingPrefab.name);
     }
 
     void CreatePreview()
@@ -147,7 +187,27 @@ public class BuildingPlacerManager : MonoBehaviour
             {
                 // We hit valid ground, now check for obstacles at this position
                 bool hasObstacle = CheckForObstacles(hit.point);
-                isValidPlacement = !hasObstacle;
+
+                if (!hasObstacle)
+                {
+                    // No obstacles, now check ore requirements
+                    if (currentBuildingRequiresOre)
+                    {
+                        // This is an extractor - check if there's ore underneath
+                        bool hasOre = CheckForOreUnderneath(hit.point);
+                        isValidPlacement = hasOre;
+                    }
+                    else
+                    {
+                        // This is NOT an extractor (like ore detector) - placement is valid
+                        isValidPlacement = true;
+                    }
+                }
+                else
+                {
+                    // Has obstacles - invalid regardless of building type
+                    isValidPlacement = false;
+                }
             }
             else
             {
@@ -168,7 +228,28 @@ public class BuildingPlacerManager : MonoBehaviour
 
             // Check for obstacles at this position
             bool hasObstacle = CheckForObstacles(groundHit.point);
-            isValidPlacement = !hasObstacle;
+
+            if (!hasObstacle)
+            {
+                // No obstacles, now check ore requirements
+                if (currentBuildingRequiresOre)
+                {
+                    // This is an extractor - check if there's ore underneath
+                    bool hasOre = CheckForOreUnderneath(groundHit.point);
+                    isValidPlacement = hasOre;
+                }
+                else
+                {
+                    // This is NOT an extractor (like ore detector) - placement is valid
+                    isValidPlacement = true;
+                }
+            }
+            else
+            {
+                // Has obstacles - invalid regardless of building type
+                isValidPlacement = false;
+            }
+
             UpdatePreviewMaterial(isValidPlacement);
         }
         else
@@ -192,10 +273,31 @@ public class BuildingPlacerManager : MonoBehaviour
             obstacleLayer
         );
 
-        // Alternative: Use a sphere check if you prefer
-        // Collider[] obstacles = Physics.OverlapSphere(position, 1f, obstacleLayer);
-
         return obstacles.Length > 0;
+    }
+
+    bool CheckForOreUnderneath(Vector3 position)
+    {
+        // Get the bounds of the preview object to check for overlaps
+        Bounds previewBounds = GetPreviewBounds();
+
+        // Check for ore using OverlapBox
+        Collider[] ores = Physics.OverlapBox(
+            position + previewBounds.center,
+            previewBounds.extents * 0.5f,  // adjust multiplier if too strict/lenient
+            currentPreview.transform.rotation,
+            oreLayer
+        );
+
+        bool hasOre = ores.Length > 0;
+
+        // Debug logging to help troubleshoot
+        if (currentBuildingRequiresOre)
+        {
+            Debug.Log($"Checking for ore at {position}, found {ores.Length} ore colliders. HasOre: {hasOre}");
+        }
+
+        return hasOre;
     }
 
     Bounds GetPreviewBounds()
@@ -268,7 +370,8 @@ public class BuildingPlacerManager : MonoBehaviour
                 }
                 else
                 {
-                    // Normal transparent color for valid placement
+                    // Green color for valid placement
+                    color = Color.green;
                     color.a = previewTransparency;
                 }
                 newMat.color = color;
@@ -315,7 +418,7 @@ public class BuildingPlacerManager : MonoBehaviour
     {
         if (currentPreview == null) return false;
 
-        // Check if preview is at a valid position (not hidden) AND no obstacles
+        // Base checks (not off-screen and valid placement flag is true)
         bool positionValid = currentPreview.transform.position.y > -100;
         return positionValid && isValidPlacement;
     }
@@ -342,7 +445,6 @@ public class BuildingPlacerManager : MonoBehaviour
         Debug.Log($"Building placed at {placementPosition}");
     }
 
-    // Replace the EnableBuildingScripts method in your BuildingPlacerManager with this:
     void EnableBuildingScripts(GameObject building)
     {
         // Enable ALL MonoBehaviour scripts on the placed building
@@ -364,6 +466,7 @@ public class BuildingPlacerManager : MonoBehaviour
     {
         isInPlacementMode = false;
         isValidPlacement = false;  // Reset validity flag
+        currentBuildingRequiresOre = false;  // Reset ore requirement
 
         if (currentPreview != null)
         {

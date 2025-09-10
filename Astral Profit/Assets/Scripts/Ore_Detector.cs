@@ -12,6 +12,9 @@ public class Ore_Detector : MonoBehaviour
     [Header("Detection Settings")]
     public float delayBeforeAnimation = 1f;
 
+    [Header("Detector Settings")]
+    public LayerMask detectorLayer; // Set this in inspector for Ore_Detector objects
+
     [Header("VFX Settings")]
     public GameObject vfxPrefab;
     public Transform vfxSpawnPoint; // Optional: specific spawn point for VFX
@@ -221,9 +224,6 @@ public class Ore_Detector : MonoBehaviour
             Vector3 randomScale = GetRandomOreScale(oreToSpawn);
             newOre.transform.localScale = randomScale;
 
-            // Set ore layer
-            newOre.layer = Mathf.RoundToInt(Mathf.Log(oreLayer.value, 2));
-
             // Add to spawned ores list
             spawnedOres.Add(newOre);
 
@@ -277,6 +277,28 @@ public class Ore_Detector : MonoBehaviour
         return Vector3.one * uniformScale;
     }
 
+    bool IsInsideOtherDetector(Vector3 position)
+    {
+        // Find all nearby detectors
+        Collider[] detectors = Physics.OverlapSphere(position, vfxMaxScale.x, detectorLayer);
+
+        foreach (Collider detector in detectors)
+        {
+            Ore_Detector otherDetector = detector.GetComponentInParent<Ore_Detector>();
+            if (otherDetector != null && otherDetector != this && otherDetector.currentVFX != null)
+            {
+                float otherRadius = (otherDetector.currentVFX.transform.localScale.x * otherDetector.oreSpawnRadius) * 0.5f;
+                float distance = Vector3.Distance(position, otherDetector.currentVFX.transform.position);
+
+                if (distance <= otherRadius)
+                {
+                    return true; // inside another detector's search zone
+                }
+            }
+        }
+        return false;
+    }
+
     Vector3 FindValidSpawnPosition(Vector3 center, float radius)
     {
         int maxAttempts = 10;
@@ -287,22 +309,27 @@ public class Ore_Detector : MonoBehaviour
             Vector2 randomCircle = Random.insideUnitCircle * radius;
             Vector3 candidatePosition = new Vector3(
                 center.x + randomCircle.x,
-                center.y, // Keep at detector height or use ground level
+                center.y,
                 center.z + randomCircle.y
             );
 
-            // Optionally raycast down to find ground level
-            RaycastHit hit;
-            if (Physics.Raycast(candidatePosition + Vector3.up * 10f, Vector3.down, out hit, 20f))
+            // Raycast down to find ground level
+            if (Physics.Raycast(candidatePosition + Vector3.up * 10f, Vector3.down, out RaycastHit hit, 20f))
             {
-                candidatePosition.y = hit.point.y + 0.1f; // Slightly above ground
+                candidatePosition.y = hit.point.y + 0.1f;
             }
 
-            // Check for overlap if prevention is enabled
+            // --- NEW: Check if candidate is inside another detector's radius ---
+            if (IsInsideOtherDetector(candidatePosition))
+            {
+                continue; // reject this candidate
+            }
+
+            // Overlap check (existing)
             if (preventOreOverlap)
             {
-                bool hasOverlap = false;
                 Collider[] overlapping = Physics.OverlapSphere(candidatePosition, oreOverlapCheckRadius, oreLayer);
+                bool hasOverlap = false;
 
                 foreach (Collider col in overlapping)
                 {
@@ -313,10 +340,7 @@ public class Ore_Detector : MonoBehaviour
                     }
                 }
 
-                if (!hasOverlap)
-                {
-                    return candidatePosition;
-                }
+                if (!hasOverlap) return candidatePosition;
             }
             else
             {
@@ -325,8 +349,9 @@ public class Ore_Detector : MonoBehaviour
         }
 
         Debug.LogWarning($"Could not find valid spawn position for ore in {gameObject.name}");
-        return Vector3.zero; // Invalid position
+        return Vector3.zero;
     }
+
 
     void OnDestroy()
     {
